@@ -1,4 +1,5 @@
 # MID Bot
+![untitled](https://github.com/Korpenter/tg-midbot/assets/141184937/5bf24332-d089-4da1-8823-2c952da8ca6f)
 
 A bot for the Russian consulate website.
 
@@ -31,7 +32,6 @@ Supported Features:
 5. **Deploy the bot**  
    ```shell
    make all
-   ```
    ```
 7. **Destroy Teardown**
    ```shell
