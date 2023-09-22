@@ -28,16 +28,3 @@ resource "yandex_function_trigger" "midbot-out-container-trigger" {
     service_account_id = yandex_iam_service_account.funstions-admin.id
   }
 }
-
-#resource "yandex_function_trigger" "midbot-container-timer" {
-#  folder_id = var.yandex_folder_id
-# name      = "midbot-container-timer"
-# timer {
-#   cron_expression = "* * * * ? *"
-#   payload = "/notify"
-# }
-#  container {
-#   id                 = yandex_serverless_container.midbot-container.id
-#   service_account_id = yandex_iam_service_account.containers-manager.id
-# }
-#}
