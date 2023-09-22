@@ -34,8 +34,12 @@ type Storage interface {
 	GetApplication(*models.Application) (*models.Application, error)
 	SaveApplication(*models.Application) error
 	RemoveApplication(*models.Application) error
-	GetAllApplications() ([]models.Application, error)
 	UpdateApplicationStatus(app *models.Application, status int) error
+	SaveCheckpoint(appID string) error
+	GetCheckpoint() (string, error)
+	DeleteCheckpoint() error
+
+	GetAllApplicationsBatched(startId string, BatchSize int64) ([]models.Application, error)
 }
 
 type Agent struct {
@@ -59,7 +63,7 @@ func (a *Agent) HandleUpdate(c echo.Context) error {
 	var err error
 	if err := c.Bind(&sqsEvent); err != nil {
 		log.Printf("Cannot bind message queue event: %v\n", err)
-		return nil
+		return c.JSON(500, nil)
 	}
 	var update tgbotapi.Update
 	body := sqsEvent.Messages[0].Details.Message.Body
@@ -67,7 +71,7 @@ func (a *Agent) HandleUpdate(c echo.Context) error {
 		err = json.Unmarshal([]byte(body), &update)
 		if err != nil {
 			log.Printf("Failed to unmarshal body into update: %v\n", err)
-			return nil
+			return c.JSON(500, nil)
 		}
 		if update.Message != nil && update.Message.IsCommand() {
 			log.Println(update.Message, update.Message.Command())

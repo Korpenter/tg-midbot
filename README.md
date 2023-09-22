@@ -2,9 +2,10 @@
 
 A bot for the Russian consulate website.
 
-**Version 0.1**  
+**Version 0.2**  
 Supported Features:
 - Check application status
+- Track application with notification on status change
 
 ## Prerequisites
 
@@ -27,15 +28,12 @@ Supported Features:
 4. **Add Telegram Bot API Token**  
    Obtain a Telegram bot API token (see [Creating a New Bot](https://core.telegram.org/bots/features#creating-a-new-bot)) and add it to `.env`.
 
-5. **Push the Image to the Registry**  
+5. **Deploy the bot**  
    ```shell
-   make push
+   make all
    ```
-6. **Deploy Infrastructure with Terraform**
-   ```shell
-   make deploy_infra
    ```
-7. **Destroy Infrastructure with Terraform**
+7. **Destroy Teardown**
    ```shell
-   make destroy_infra
+   make teardown
    ```

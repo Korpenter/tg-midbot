@@ -14,6 +14,8 @@ import (
 
 type ydb struct {
 	*dynamo.DB
+	checkTable *dynamo.Table
+	appTable   *dynamo.Table
 }
 
 func New() *ydb {
@@ -27,18 +29,26 @@ func New() *ydb {
 
 	err := db.CreateTable("midbot/Applications", &models.Application{}).Run()
 	if err != nil {
-		log.Print(err)
+		log.Println(err)
 	}
+	appTable := db.Table("midbot/Applications")
+	err = db.CreateTable("midbot/Checkpoints", &models.Checkpoint{}).Run()
+	if err != nil {
+		log.Println(err)
+	}
+	checkTable := db.Table("midbot/Checkpoints")
 
 	return &ydb{
-		db,
+		DB:         db,
+		checkTable: &checkTable,
+		appTable:   &appTable,
 	}
 }
 
 func (y *ydb) GetApplication(app *models.Application) (*models.Application, error) {
 	var resultApp models.Application
 
-	err := y.DB.Table("midbot/Applications").Get("ChatID", app.ChatID).Range("ApplicationID", dynamo.Equal, app.ApplicationID).One(&resultApp)
+	err := y.appTable.Get("ChatID", app.ChatID).Range("ApplicationID", dynamo.Equal, app.ApplicationID).One(&resultApp)
 	if errors.Is(err, dynamo.ErrNotFound) {
 		return nil, agent.ErrAppNotFound
 	}
@@ -51,15 +61,7 @@ func (y *ydb) GetApplication(app *models.Application) (*models.Application, erro
 }
 
 func (y *ydb) SaveApplication(app *models.Application) error {
-	existingApp, err := y.GetApplication(app)
-	if err != nil && !errors.Is(err, agent.ErrAppNotFound) {
-		return err
-	}
-	if existingApp != nil {
-		return agent.ErrAlreadyExists
-	}
-
-	err = y.DB.Table("midbot/Applications").Put(app).Run()
+	err := y.appTable.Put(app).Run()
 	if err != nil {
 		log.Printf("Error saving application: %v", err)
 	}
@@ -67,39 +69,63 @@ func (y *ydb) SaveApplication(app *models.Application) error {
 }
 
 func (y *ydb) RemoveApplication(app *models.Application) error {
-	log.Printf("Attempting to remove application with ChatID: %v and ApplicationID: %v", app.ChatID, app.ApplicationID)
-
-	_, err := y.GetApplication(app)
-	if errors.Is(err, dynamo.ErrNotFound) {
-		return agent.ErrAppNotFound
-	}
-	if err != nil {
-		return err
-	}
-
-	err = y.DB.Table("midbot/Applications").Delete("ChatID", app.ChatID).Range("ApplicationID", app.ApplicationID).Run()
+	err := y.appTable.Delete("ChatID", app.ChatID).Range("ApplicationID", app.ApplicationID).Run()
 	if err != nil {
 		log.Printf("Error removing application: %v", err)
 	}
 	return err
 }
 
-func (y *ydb) GetAllApplications() ([]models.Application, error) {
+func (y *ydb) GetAllApplicationsBatched(startId string, batchSize int64) ([]models.Application, error) {
 	var apps []models.Application
-	err := y.DB.Table("midbot/Applications").Scan().All(&apps)
+
+	scanOp := y.appTable.Scan().Limit(batchSize)
+
+	if startId != "" {
+		scanOp = scanOp.Filter("ApplicationID >= ?", startId)
+	}
+
+	err := scanOp.All(&apps)
 	if err != nil {
-		log.Printf("Error fetching all applications: %v", err)
+		log.Printf("Error fetching applications batch: %v", err)
 		return nil, err
 	}
+
 	return apps, nil
 }
 
 func (y *ydb) UpdateApplicationStatus(app *models.Application, status int) error {
-	err := y.DB.Table("midbot/Applications").Update("ChatID", app.ChatID).
+	err := y.appTable.Update("ChatID", app.ChatID).
 		Range("ApplicationID", app.ApplicationID).
 		Set("Status", status).Run()
 	if err != nil {
 		log.Printf("Error updating application status: %v", err)
 	}
 	return err
+}
+
+func (y *ydb) SaveCheckpoint(appID string) error {
+	checkpoint := models.Checkpoint{
+		Identifier:    "CHECKPOINT",
+		ApplicationID: appID,
+	}
+
+	return y.checkTable.Put(checkpoint).Run()
+}
+
+func (y *ydb) GetCheckpoint() (string, error) {
+	var cp models.Checkpoint
+	err := y.checkTable.Get("Identifier", "CHECKPOINT").One(&cp)
+	if err != nil {
+		if errors.Is(err, dynamo.ErrNotFound) {
+			return "", nil
+		}
+		return "", err
+	}
+
+	return cp.ApplicationID, nil
+}
+
+func (y *ydb) DeleteCheckpoint() error {
+	return y.checkTable.Delete("Identifier", "CHECKPOINT").Run()
 }
