@@ -14,8 +14,17 @@
 # Output of the go coverage tool, specifically when used with LiteIDE
 *.out
 
-# Dependency directories (remove the comment below to include it)
-# vendor/
-
 # Go workspace file
 go.work
+
+# Project specific
+.env
+main.tf
+.idea
+.terraform
+.terraform.lock.hcl
+*.tfstate*
+.gateway_url
+.image_digest
+.midbot*
+dist
