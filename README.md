@@ -1,5 +1,5 @@
 # MID Bot
-![untitled](https://github.com/Korpenter/tg-midbot/assets/141184937/5bf24332-d089-4da1-8823-2c952da8ca6f)
+![untitled](https://github.com/Korpenter/tg-midbot/assets/141184937/d128b43b-32ad-4df1-b9ee-bf0d327bc999)
 
 A bot for the Russian consulate website.
 
