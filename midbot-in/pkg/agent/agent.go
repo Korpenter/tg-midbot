@@ -35,11 +35,6 @@ type Storage interface {
 	SaveApplication(*models.Application) error
 	RemoveApplication(*models.Application) error
 	UpdateApplicationStatus(app *models.Application, status int) error
-	SaveCheckpoint(appID string) error
-	GetCheckpoint() (string, error)
-	DeleteCheckpoint() error
-
-	GetAllApplicationsBatched(startId string, BatchSize int64) ([]models.Application, error)
 }
 
 type Agent struct {
@@ -86,14 +81,6 @@ func (a *Agent) HandleUpdate(c echo.Context) error {
 				return a.sendToSQS(update.Message.Chat.ID, fmt.Sprintf("Unknown command."))
 			}
 		}
-	} else {
-		payload := sqsEvent.Messages[0].Details.Payload
-		switch {
-		case payload == "/notify":
-			return a.handleNotifyCommand()
-		default:
-			return nil
-		}
 	}
 	return nil
 }
@@ -118,7 +105,7 @@ func (a *Agent) sendToSQS(chatID int64, msg string) error {
 func (a *Agent) requestStatus(id string) (*models.Status, error) {
 	req, err := http.NewRequest("GET", fmt.Sprintf("https://info.midpass.ru/api/request/%s", strings.TrimSpace(id)), nil)
 	if err != nil {
-		return nil, errors.New("Encountered an error, try again later.")
+		return nil, errors.New("Remote server error. Please try again later.")
 	}
 
 	randomIndex := rand.Intn(len(userAgents))

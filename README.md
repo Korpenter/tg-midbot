@@ -1,9 +1,9 @@
 # MID Bot
-![untitled](https://github.com/Korpenter/tg-midbot/assets/141184937/d128b43b-32ad-4df1-b9ee-bf0d327bc999)
+![untitled](https://github.com/Korpenter/club/assets/141184937/87676445-94b3-46f1-a45e-2a9427abbae5)
 
 A bot for the Russian consulate website.
 
-**Version 0.2**  
+**Version 0.2.1**  
 Supported Features:
 - Check application status
 - Track application with notification on status change
@@ -24,7 +24,7 @@ Supported Features:
    Follow the [Docker Quickstart](https://cloud.yandex.com/en/docs/container-registry/quickstart/) guide.
 
 3. **Set Up Container Registry**  
-   Create a container registry and add its details to `.env`.
+   Create a container registry and add its id to `.env`.
 
 4. **Add Telegram Bot API Token**  
    Obtain a Telegram bot API token (see [Creating a New Bot](https://core.telegram.org/bots/features#creating-a-new-bot)) and add it to `.env`.
@@ -33,7 +33,7 @@ Supported Features:
    ```shell
    make all
    ```
-7. **Destroy Teardown**
+7. **Destroy the bot**
    ```shell
    make teardown
    ```

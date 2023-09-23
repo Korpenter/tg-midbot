@@ -7,6 +7,11 @@ push_midbot: build_midbot
 	cd midbot-in && docker push cr.yandex/$(YC_IMAGE_REGISTRY_ID)/$(MIDBOT_CONTAINER_NAME) | \
 	grep "digest: sha256" | awk -F'digest: ' '{print $$2}' | cut -d' ' -f1 > ../.midbot_image_digest
 
+zip_midbot_notify:
+	mkdir -p midbot-notify/dist
+	cd midbot-notify && zip -r dist/dist.zip * -x "dist/*"
+	sha256sum midbot-notify/dist/dist.zip | cut -d' ' -f1 > .midbot_notify_function_hash
+
 zip_midbot_out:
 	mkdir -p midbot-out/dist
 	cd midbot-out && zip -r dist/dist.zip * -x "dist/*"
@@ -32,10 +37,10 @@ deploy_infra:
 	-var="image_registry_id=$(YC_IMAGE_REGISTRY_ID)" \
 	-var="tg_bot_token=$(TELEGRAM_APITOKEN)" \
 	-var="midbot_image_digest=$(shell cat .midbot_image_digest)" \
-	-var="midbot_function_hash=$(shell cat .midbot_function_hash)"
+	-var="midbot_function_hash=$(shell cat .midbot_function_hash)" \
+	-var="midbot_notify_function_hash=$(shell cat .midbot_notify_function_hash)"
 	cd infra && terraform output -raw apigw-url > .gateway_url
 	$(MAKE) webhook_create
-	$(MAKE) create_timer_trigger
 
 destroy_infra:
 	cd infra && terraform init && \
@@ -47,21 +52,9 @@ destroy_infra:
 	-var="image_registry_id=$(YC_IMAGE_REGISTRY_ID)" \
 	-var="tg_bot_token=$(TELEGRAM_APITOKEN)" \
 	-var="midbot_image_digest=$(shell cat .midbot_image_digest)" \
-	-var="midbot_function_hash=$(shell cat .midbot_function_hash)"
+	-var="midbot_function_hash=$(shell cat .midbot_function_hash)" \
+	-var="midbot_notify_function_hash=$(shell cat .midbot_notify_function_hash)"
 
-delete_timer_trigger:
-	-yc serverless trigger delete midbot-container-timer
+all: push_midbot zip_midbot_out zip_midbot_notify deploy_infra
 
-create_timer_trigger: delete_timer_trigger
-	yc serverless trigger create timer \
-	  --name "midbot-container-timer" \
-	  --cron-expression '* * * * ? *' \
-	  --payload "/notify" \
-	  --invoke-container-id $(shell cd infra && terraform output --raw midbot_container_id) \
-	  --invoke-container-service-account-id $(shell cd infra && terraform output  --raw container_sa_id) \
-	  --retry-attempts 1 \
-	  --retry-interval 10s
-
-all: push_midbot zip_midbot_out deploy_infra
-
-teardown: destroy_infra webhook_delete delete_timer_trigger
+teardown: destroy_infra webhook_delete

@@ -31,3 +31,7 @@ variable "midbot_image_digest" {
 variable "midbot_function_hash" {
   type        = string
 }
+
+variable "midbot_notify_function_hash" {
+  type        = string
+}

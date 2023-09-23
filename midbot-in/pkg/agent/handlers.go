@@ -14,7 +14,6 @@ const (
 	MsgProvideAppNumber           = "Please provide an application number after /track."
 	MsgInvalidID                  = "Invalid id."
 	MsgAlreadyTracked             = "Application is already being tracked."
-	BatchSize                     = 100
 	MsgProvideAppNumberAfterCheck = "Please provide an application number after /check."
 )
 
@@ -110,58 +109,4 @@ func (a *Agent) handleUntrackCommand(message *tgbotapi.Message) error {
 		return a.sendToSQS(chatID, err.Error())
 	}
 	return a.sendToSQS(chatID, fmt.Sprintf("Stopped tracking application %s.", id))
-}
-
-func (a *Agent) handleNotifyCommand() error {
-	lastCheckpoint, err := a.repo.GetCheckpoint()
-	if err != nil {
-		log.Printf("Error fetching checkpoint: %v", err)
-		return err
-	}
-
-	for {
-		apps, err := a.repo.GetAllApplicationsBatched(lastCheckpoint, BatchSize)
-		if err != nil {
-			log.Printf("Error fetching applications in batch from checkpoint %s: %v", lastCheckpoint, err)
-			return err
-		}
-		if len(apps) == 0 {
-			break
-		}
-
-		for _, app := range apps {
-			status, err := a.requestStatus(app.ApplicationID)
-			if err != nil {
-				a.sendToSQS(app.ChatID, "Error fetching status")
-				continue
-			}
-
-			var msg string
-			if status.PassportStatus.ID != app.Status {
-				if status.PassportStatus.ID == 5 { // should be 4 for processed (currently for testing purposes)
-					msg = fmt.Sprintf("Application %s is processed with status: %s.\nStopped tracking.", app.ApplicationID, status.PassportStatus.Name)
-					a.repo.RemoveApplication(&app)
-				} else {
-					msg = fmt.Sprintf("Application %s is updated with status: %s", app.ApplicationID, status.PassportStatus.Name)
-				}
-				a.sendToSQS(app.ChatID, msg)
-			}
-
-			if err := a.repo.SaveCheckpoint(app.ApplicationID); err != nil {
-				log.Printf("Error saving checkpoint: %v", err)
-				return err
-			}
-		}
-
-		if len(apps) < BatchSize {
-			if err := a.repo.DeleteCheckpoint(); err != nil {
-				log.Printf("Error deleting checkpoint: %v", err)
-				return err
-			}
-			break
-		}
-
-		lastCheckpoint = apps[len(apps)-1].ApplicationID
-	}
-	return nil
 }

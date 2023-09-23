@@ -19,7 +19,7 @@ func init() {
 	}
 }
 
-func Handler(ctx context.Context, event dto.QueueEvent) error {
+func Handler(ctx context.Context, event dto.Event) error {
 	message := event.Messages[0]
 	var payload dto.SQSMessagePayload
 	err := json.Unmarshal([]byte(message.Details.Message.Body), &payload)

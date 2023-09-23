@@ -21,6 +21,7 @@ type EventMetadata struct {
 type Details struct {
 	QueueID string         `json:"queue_id"`
 	Message MessageDetails `json:"message"`
+	Payload string         `json:"payload"`
 }
 
 type MessageDetails struct {
@@ -30,11 +31,6 @@ type MessageDetails struct {
 	Attributes             map[string]string    `json:"attributes"`
 	MessageAttributes      map[string]Attribute `json:"message_attributes"`
 	MD5OfMessageAttributes string               `json:"md5_of_message_attributes"`
-}
-
-type SQSMessagePayload struct {
-	ChatID      int64  `json:"chat_id"`
-	MessageBody string `json:"message_body"`
 }
 
 type Attribute struct {

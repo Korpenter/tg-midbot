@@ -1,5 +1,5 @@
 FROM --platform=amd64 golang:alpine as builder
-ENV VERSION v0.1.0
+ENV VERSION v0.2.1
 WORKDIR /app
 COPY go.mod go.sum  /app/
 RUN go mod download
