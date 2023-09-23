@@ -82,8 +82,6 @@ func (a *Agent) HandleUpdate(c echo.Context) error {
 				return a.handleTrackCommand(update.Message)
 			case "untrack":
 				return a.handleUntrackCommand(update.Message)
-			case "notify":
-				return a.handleNotifyCommand()
 			default:
 				return a.sendToSQS(update.Message.Chat.ID, fmt.Sprintf("Unknown command."))
 			}
